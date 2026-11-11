@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SafeCoach — безопасная тренировка</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:#141a22; --card2:#1a222c; --line:#243040;
+    --text:#e8eef6; --muted:#8d9bad; --mint:#23d3a6; --mint-dark:#0f6f58;
+    --yellow:#f6c453; --red:#ff6b6b; --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body{padding:calc(14px + env(safe-area-inset-top)) 14px 175px;max-width:560px;margin:0 auto}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+  h1,h2,h3,p{margin:0}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px 14px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(140deg,#23d3a6,#12836a);
+    display:grid;place-items:center;font-weight:800;color:#04231c;font-size:18px}
+  .brand b{font-size:17px;letter-spacing:.2px}
+  .brand span{display:block;font-size:12px;color:var(--muted)}
+  .ghost{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;color:var(--muted);background:var(--card)}
+  .notice{background:rgba(246,196,83,.1);border:1px solid rgba(246,196,83,.32);color:#ffe6a8;
+    border-radius:14px;padding:10px 12px;font-size:12.5px;line-height:1.45;margin-bottom:12px}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .tab{padding:11px 8px;border-radius:14px;background:var(--card);border:1px solid var(--line);
+    font-size:13px;color:var(--muted);text-align:center;transition:.15s}
+  .tab b{display:block;font-size:16px;color:var(--text);margin-bottom:2px}
+  .tab.on{border-color:var(--mint);background:rgba(35,211,166,.09);color:#bff5e5}
+  .tab.on b{color:var(--mint)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+  .hero{position:relative;overflow:hidden}
+  .hero:after{content:"";position:absolute;right:-60px;top:-70px;width:190px;height:190px;border-radius:50%;
+    background:radial-gradient(circle,rgba(35,211,166,.22),transparent 70%)}
+  .kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mint);font-weight:700}
+  .hero h2{font-size:22px;margin:8px 0 6px;line-height:1.2}
+  .hero p{color:var(--muted);font-size:14px;line-height:1.45}
+  .bar{height:8px;border-radius:99px;background:#0e141b;margin-top:14px;overflow:hidden;border:1px solid #1c2633}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#23d3a6,#5ef0c8);transition:width .3s}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .muted{color:var(--muted);font-size:13px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#bff5e5;
+    background:rgba(35,211,166,.1);border:1px solid rgba(35,211,166,.25);padding:6px 10px;border-radius:99px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;
+    padding:13px 16px;font-weight:600;font-size:15px;transition:.15s;min-height:48px}
+  .btn.primary{background:linear-gradient(140deg,#23d3a6,#14a583);color:#04231c}
+  .btn.primary:active{transform:translateY(1px)}
+  .btn.ghost2{background:var(--card2);border:1px solid var(--line);color:var(--text)}
+  .btn.wide{width:100%}
+  .btn:disabled{opacity:.45}
+  .warm{display:flex;gap:12px;align-items:center}
+  .warm .clock{font-variant-numeric:tabular-nums;font-size:26px;font-weight:700;min-width:76px}
+  .warm .txt{font-size:13px;color:var(--muted);line-height:1.4}
+  .ex{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;
+    transition:border-color .2s}
+  .ex.live{border-color:var(--mint);box-shadow:0 0 0 1px rgba(35,211,166,.25)}
+  .ex.done{opacity:.62}
+  .ex-head{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left}
+  .num{width:28px;height:28px;border-radius:9px;background:#0f1620;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:13px;color:var(--muted);flex:0 0 auto;margin-top:2px}
+  .ex.on .num{background:rgba(35,211,166,.15);color:var(--mint);border-color:rgba(35,211,166,.4)}
+  .ex-title{font-size:16px;font-weight:650;line-height:1.25}
+  .ex-meta{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .chev{margin-left:auto;color:var(--muted);font-size:18px;padding:4px 2px}
+  .cue{margin-top:12px;background:rgba(246,196,83,.1);border:1px solid rgba(246,196,83,.28);
+    color:#ffe6a8;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.35;font-weight:600}
+  .dots{display:flex;gap:6px;margin-top:12px}
+  .dot{height:7px;flex:1;border-radius:99px;background:#0f1620;border:1px solid #22303f}
+  .dot.on{background:var(--mint);border-color:var(--mint)}
+  .ex-actions{display:flex;gap:8px;margin-top:12px}
+  .ex-actions .btn{flex:1;font-size:14px;min-height:44px;padding:10px 12px}
+  .detail{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;font-size:13.5px;color:#c7d3e1;line-height:1.55}
+  .detail ul{margin:8px 0 0;padding-left:18px}
+  .detail li{margin-bottom:5px}
+  .tag{font-size:11.5px;color:#9fe9d6;background:rgba(35,211,166,.08);border:1px solid rgba(35,211,166,.2);
+    border-radius:8px;padding:3px 7px;margin-right:6px;display:inline-block;margin-top:8px}
+  .live-panel{margin-top:12px;border-top:1px solid #1e2a38;padding-top:14px}
+  .phase-wrap{display:flex;gap:16px;align-items:flex-start}
+  .ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+    background:radial-gradient(circle at 50% 40%,rgba(35,211,166,.18),rgba(35,211,166,.04));
+    border:2px solid rgba(35,211,166,.5);transition:border-color .2s}
+  .ring.out{border-color:rgba(246,196,83,.6);background:radial-gradient(circle at 50% 40%,rgba(246,196,83,.16),rgba(246,196,83,.03))}
+  .ring b{font-size:14px;display:block;text-align:center}
+  .ring span{display:block;text-align:center;font-size:24px;font-weight:750;font-variant-numeric:tabular-nums}
+  .phase-copy{font-size:13px;color:var(--muted);line-height:1.45}
+  .phase-copy b{color:var(--text);display:block;font-size:15px;margin-bottom:4px}
+  .steppers{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
+  .stepper{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .stepper label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px}
+  .stepper .ctl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .stepper button{width:34px;height:34px;border-radius:9px;background:#0f1620;border:1px solid var(--line);font-size:18px}
+  .stepper input{width:100%;background:transparent;border:0;color:var(--text);font-size:20px;font-weight:700;
+    text-align:center;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .rate{display:grid;gap:8px;margin-top:10px}
+  .rate button{padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--card2);
+    text-align:left;font-size:14.5px;display:flex;gap:10px;align-items:center}
+  .rate button small{color:var(--muted);font-size:12px}
+  .rate .easy{border-color:rgba(35,211,166,.4)}
+  .rate .hard{border-color:rgba(255,107,107,.4)}
+  .safety{border-color:rgba(255,107,107,.28);background:linear-gradient(180deg,rgba(255,107,107,.06),var(--card))}
+  .safety h3{font-size:15px;margin-bottom:8px}
+  .safety ul{margin:0;padding-left:18px;font-size:13.5px;color:#e3c9c9;line-height:1.55}
+  .safety li{margin-bottom:6px}
+  .food{border-color:rgba(246,196,83,.22);background:linear-gradient(180deg,rgba(246,196,83,.05),var(--card))}
+  .food h3{font-size:15px;margin-bottom:8px}
+  .food p{font-size:13.5px;color:#d9cfb6;line-height:1.55}
+  .rest{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    background:rgba(11,15,20,.94);backdrop-filter:blur(10px);border-top:1px solid var(--line);z-index:20}
+  .rest-in{max-width:532px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .rest .time{font-size:26px;font-weight:750;font-variant-numeric:tabular-nums;min-width:74px}
+  .rest .next{font-size:12.5px;color:var(--muted);line-height:1.35;flex:1}
+  .rest .next b{color:var(--text);display:block;font-size:13.5px}
+  .summary h2{font-size:22px;margin-bottom:6px}
+  .summary .big{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;margin:12px 0 2px}
+  .prog-item{padding:10px 0;border-bottom:1px solid #1d2835;font-size:13.5px;line-height:1.45}
+  .prog-item:last-child{border-bottom:0}
+  .prog-item b{font-size:14px}
+  .prog-item span{color:var(--muted)}
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#111a24;border:1px solid var(--line);
+    color:var(--text);padding:10px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;z-index:40;max-width:90%}
+  .toast.show{opacity:1;bottom:104px}
+  .hidden{display:none!important}
+  @media (max-width:360px){.ring{width:78px;height:78px}.hero h2{font-size:20px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">SC</div>
+    <div><b>SafeCoach</b><span>зал без тренера, но с головой</span></div>
+  </div>
+  <button class="ghost" id="finishBtn">Итоги</button>
+</header>
+
+<main>
+  <div class="notice hidden" id="storageNotice">
+    ⚠️ Браузер не даёт сохранять данные в этом режиме (файл открыт напрямую).
+    Тренировка работает, но веса не запомнятся после перезагрузки — открой страницу по ссылке
+    или добавь её на экран «Домой».
+  </div>
+  <div class="tabs" id="tabs"></div>
+
+  <section id="dashboard">
+    <div class="card hero">
+      <div class="kicker" id="dayKicker">День 1 из 3</div>
+      <h2 id="dayTitle">Спина, грудь и глубокий кор</h2>
+      <p id="daySub">3 подхода × 12–15 повторов · отдых 60–90 сек · без натуживания</p>
+      <div class="bar"><i id="dayBar"></i></div>
+      <div class="row" style="margin-top:10px">
+        <span class="muted" id="dayProgress">0 из 15 подходов</span>
+        <span class="pill" id="dayTime">≈ 55 мин</span>
+      </div>
+    </div>
+
+    <div class="card warm">
+      <div class="clock" id="warmClock">8:00</div>
+      <div class="txt" style="flex:1">
+        <b style="color:var(--text);font-size:14px">Разминка</b><br>
+        Дорожка 5–7 минут спокойным шагом + суставная разминка: плечи, таз, колени.
+      </div>
+      <button class="btn ghost2" id="warmBtn" style="min-height:40px;padding:9px 12px;font-size:13px">Старт</button>
+    </div>
+
+    <div id="exerciseList"></div>
+
+    <div class="card safety">
+      <h3>⛔ Правила безопасности</h3>
+      <ul>
+        <li><b>Дыхание — главное.</b> Любое усилие строго на выдохе. Никакой задержки дыхания и натуживания.</li>
+        <li><b>Перед усилием</b> мягко подтяни мышцы тазового дна вверх и низ живота — как будто останавливаешь мочеиспускание.</li>
+        <li><b>Никаких</b> классических скручиваний, планок на время, прыжков и приседаний со штангой.</li>
+        <li><b>Комфортный вес:</b> последние 2–3 повтора с усилием, но без дрожи и перекошенного лица. Оставляй 2–3 повтора в запасе.</li>
+        <li><b>Стоп-сигнал:</b> тяжесть или тянущие ощущения внизу живота, дискомфорт в области таза — сразу прекращай подход и напиши мне.</li>
+      </ul>
+    </div>
+
+    <div class="card food">
+      <h3>🥗 Про живот — честно</h3>
+      <p>Одних тренировок мало: работает небольшой дефицит калорий без жёстких голодовок, достаточно белка
+        и клетчатки. Клетчатка и вода важны ещё и для мягкого стула — это прямая профилактика геморроя.</p>
+    </div>
+  </section>
+
+  <section id="summary" class="hidden"></section>
+</main>
+
+<div class="rest hidden" id="restBar">
+  <div class="rest-in">
+    <div class="time" id="restTime">1:15</div>
+    <div class="next" id="restNext"><b>Следующее упражнение</b>подготовь тренажёр</div>
+    <button class="btn ghost2" id="skipRest" style="min-height:40px;padding:9px 12px;font-size:13px">Пропустить</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const tg = (window.Telegram && window.Telegram.WebApp) || null;
+if(tg){
+  try{
+    tg.ready();
+    tg.expand();
+    if(tg.setHeaderColor) tg.setHeaderColor("#0b0f14");
+    if(tg.setBackgroundColor) tg.setBackgroundColor("#0b0f14");
+    if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+    if(tg.BackButton) tg.BackButton.onClick(() => {
+      const summary = document.getElementById("summary");
+      if(summary && !summary.classList.contains("hidden")) showDashboard();
+    });
+  }catch(e){}
+}
+
+/* ------------------------------------------------------------------ данные */
+
+const DEFAULTS = {
+  lat:      {weight:15, step:5},
+  row:      {weight:20, step:5},
+  press:    {weight:15, step:5},
+  abd:      {weight:25, step:5},
+  deadbug:  {weight:0,  step:0},
+  bridge:   {weight:0,  step:0},
+  legpress: {weight:30, step:5},
+  legcurl:  {weight:15, step:5},
+  kickback: {weight:5,  step:2.5},
+  triceps:  {weight:10, step:2.5},
+  dbpress:  {weight:4,  step:1},
+  lateral:  {weight:2,  step:1},
+  pulldown2:{weight:15, step:5},
+  add:      {weight:25, step:5},
+  birddog:  {weight:0,  step:0},
+  breath:   {weight:0,  step:0}
+};
+
+const DAYS = [
+  {
+    n: 1,
+    title: "Спина, грудь и глубокий кор",
+    minutes: 55,
+    ex: [
+      {key:"lat", name:"Тяга верхнего блока к груди", muscle:"спина", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Подтяни тазовое дно • Выдох при тяге вниз",
+       setup:["Сядь плотно, бёдра под валиком, стопы на полу","Тяни рукоять к верху груди, локти вниз, лопатки сводим","Корпус почти вертикально, без раскачки"]},
+      {key:"row", name:"Горизонтальная тяга к поясу", muscle:"спина", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на подтягивании • Ребра вниз",
+       setup:["Стопы на платформе, колени чуть согнуты","Грудь вперёд, поясница нейтральна","Тяни к поясу, не отклоняясь корпусом назад"]},
+      {key:"press", name:"Жим от груди в тренажёре", muscle:"грудь", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на жиме • Лопатки сведены вниз",
+       setup:["Спина плотно прижата к спинке","Рукояти на уровне середины груди","Не выпрямляй локти до щелчка"]},
+      {key:"abd", name:"Разведение ног в тренажёре", muscle:"ягодицы, внешняя поверхность бедра", sets:3, repsMin:15, repsMax:15,
+       inhale:3, exhale:3, cue:"Выдох на разведении • Движение плавное, без рывков",
+       setup:["Сядь плотно, спина прижата, руки на рукоятях","Подушки на внешней стороне бёдер","Разводи на выдохе, возвращай медленно"]},
+      {key:"deadbug", name:"«Мёртвый жук»", muscle:"глубокий кор", sets:3, repsMin:8, repsMax:10,
+       unit:"раз на сторону", inhale:3, exhale:4, cue:"Выдох на вытягивании • Поясница прижата к полу",
+       setup:["Ляг, руки вверх, колени над тазом под 90°","Опускай противоположные руку и ногу, поясница прижата","Живот не встаёт «домиком» — иначе уменьши амплитуду"]}
+    ]
+  },
+  {
+    n: 2,
+    title: "Ноги, ягодицы и руки",
+    minutes: 55,
+    ex: [
+      {key:"bridge", name:"Ягодичный мостик на полу", muscle:"ягодицы", sets:3, repsMin:15, repsMax:15,
+       inhale:3, exhale:3, cue:"Выдох на подъёме таза • Поясницу не прогибаем",
+       setup:["Ляг, стопы на ширине таза, пятки близко к ягодицам","На выдохе подними таз до линии колени–таз–плечи","Вверху сожми ягодицы на 2 секунды"]},
+      {key:"legpress", name:"Жим ногами в тренажёре", muscle:"ноги", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:3, cue:"Выжимай строго на выдохе • Таз не отрывается от сиденья",
+       setup:["Небольшой вес, стопы узко или на ширине плеч","Не опускай платформу слишком глубоко","Колени не блокируй в верхней точке"]},
+      {key:"legcurl", name:"Сгибание ног лёжа", muscle:"задняя поверхность бедра", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на сгибании • Таз прижат",
+       setup:["Валик над пятками, колени на краю лежака","Бёдра прижаты к скамье","Сгибай до 90°, таз не отрывается"]},
+      {key:"kickback", name:"Отведение ноги назад в кроссовере", muscle:"ягодицы", sets:3, repsMin:15, repsMax:15,
+       unit:"раз на сторону", inhale:3, exhale:2, cue:"Выдох на отведении • Корпус не наклоняется",
+       setup:["Манжета на голени, лицом к блоку, держись за раму","Отводи прямую ногу назад на 30–40°","Пятка смотрит вверх, поясница не прогибается"]},
+      {key:"triceps", name:"Разгибание рук на блоке", muscle:"трицепс", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на разгибании • Плечи не двигаются",
+       setup:["Локти прижаты к корпусу, корпус чуть наклонён","Разгибай руки вниз до прямых, без рывка","Возвращай подконтрольно, до 90°"]}
+    ]
+  },
+  {
+    n: 3,
+    title: "Плечи, спина и кор",
+    minutes: 50,
+    ex: [
+      {key:"dbpress", name:"Жим гантелей вверх сидя", muscle:"плечи", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на жиме • Ребра не поднимаются",
+       setup:["Спинка под углом 75–80°, спина прижата","Гантели 2–4 кг, локти чуть впереди","Жми вверх без прогиба в пояснице"]},
+      {key:"lateral", name:"Махи гантелями в стороны", muscle:"плечи", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на подъёме • Плечи вниз",
+       setup:["Гантели 1–3 кг, локти чуть согнуты","Поднимай до уровня плеч, мизинцем чуть вверх","Без раскачивания корпусом"]},
+      {key:"pulldown2", name:"Тяга верхнего блока узким обратным хватом", muscle:"спина и бицепс", sets:3, repsMin:12, repsMax:15,
+       inhale:3, exhale:2, cue:"Выдох на тяге • Локти идут вниз вдоль корпуса",
+       setup:["Обратный хват на ширине плеч","Корпус слегка назад, грудь раскрыта","Тяни к верху груди, без рывка"]},
+      {key:"add", name:"Сведение ног в тренажёре", muscle:"внутренняя поверхность бедра", sets:3, repsMin:15, repsMax:15,
+       inhale:3, exhale:3, cue:"Выдох на сведении • Без рывков и большого веса",
+       setup:["Сядь прямо, спина прижата","Подушки на внутренней стороне бёдер","Своди плавно, колени смотрят вперёд"]},
+      {key:"birddog", name:"«Птица-собака»", muscle:"глубокий кор", sets:3, repsMin:8, repsMax:10,
+       unit:"раз на сторону", inhale:3, exhale:3, cue:"Выдох на вытягивании • Таз не заваливается",
+       setup:["Стой на четвереньках, ладони под плечами","Вытяни противоположные руку и ногу до прямой линии","Держи баланс 2 секунды, живот подтянут"]},
+      {key:"breath", name:"Диафрагмальное дыхание лёжа", muscle:"дыхание и тазовое дно", sets:1, repsMin:5, repsMax:7,
+       unit:"циклов", inhale:4, exhale:6, cue:"Вдох носом в рёбра • На выдохе подтяни тазовое дно",
+       setup:["Ляг, колени согнуты, одна рука на животе","Вдох 4 секунды, живот не надувается","Выдох 6 секунд: тазовое дно вверх, живот к позвоночнику"]}
+    ]
+  }
+];
+
+/* ------------------------------------------------------------------ хранилище */
+
+const KEY = "safecoach_v2";
+const store = Object.assign({weights:{}, history:[], sessions:{}, day:1, tone:true, vib:true}, load());
+
+let storageOk = true;
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ storageOk = false; return {}; }
+}
+function save(){
+  if(!storageOk) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); }
+  catch(e){ storageOk = false; showStorageNotice(); }
+}
+function showStorageNotice(){
+  const el = document.getElementById("storageNotice");
+  if(el) el.classList.remove("hidden");
+}
+
+function weightOf(ex){
+  const d = DEFAULTS[ex.key] || {weight:0, step:2.5};
+  return store.weights[ex.key] !== undefined ? store.weights[ex.key] : d.weight;
+}
+function stepOf(ex){ return (DEFAULTS[ex.key] || {step:2.5}).step; }
+
+function sessionOf(){
+  const key = String(store.day);
+  if(!store.sessions[key]){
+    store.sessions[key] = {startedAt: Date.now(), sets:{}};
+    save();
+  }
+  return store.sessions[key];
+}
+function setsOf(exKey){
+  const s = sessionOf();
+  return s.sets[exKey] || (s.sets[exKey] = []);
+}
+
+/* ------------------------------------------------------------------ утилиты */
+
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const fmtTime = (sec) => {
+  sec = Math.max(0, Math.ceil(sec));
+  return Math.floor(sec/60) + ":" + String(sec%60).padStart(2,"0");
+};
+const roundHalf = (v) => Math.round(v*2)/2;
+const dayOf = (n) => DAYS.find(d => d.n === n) || DAYS[0];
+
+let toastTimer = null;
+function toast(text){
+  const el = $("#toast");
+  el.textContent = text;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+/* ------------------------------------------------------------------ звук и вибрация */
+
+let audioCtx = null;
+function beep(freq, duration=0.12, gain=0.05){
+  if(!store.tone) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(gain, audioCtx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    o.connect(g).connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + duration + 0.02);
+  }catch(e){}
+}
+function buzz(ms){
+  if(!store.vib) return;
+  if(tg && tg.HapticFeedback){
+    try{ tg.HapticFeedback.impactOccurred(ms >= 40 ? "medium" : "light"); return; }catch(e){}
+  }
+  if(navigator.vibrate) navigator.vibrate(ms);
+}
+function hapticSuccess(){
+  if(tg && tg.HapticFeedback){
+    try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){}
+  }
+}
+
+/* ------------------------------------------------------------------ wake lock */
+
+let wakeLock = null;
+async function acquireWakeLock(){
+  try{
+    if("wakeLock" in navigator && !wakeLock){
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    }
+  }catch(e){}
+}
+async function releaseWakeLock(){
+  try{ if(wakeLock){ await wakeLock.release(); wakeLock = null; } }catch(e){}
+}
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible" && state.live) acquireWakeLock();
+});
+
+/* ------------------------------------------------------------------ состояние UI */
+
+const state = {live:null, rest:null, warm:null, phase:null};
+
+/* ------------------------------------------------------------------ отрисовка дня */
+
+function renderTabs(){
+  const tabs = $("#tabs");
+  tabs.innerHTML = DAYS.map(d => `
+    <button class="tab ${d.n === store.day ? "on" : ""}" data-day="${d.n}">
+      <b>День ${d.n}</b>${d.title}
+    </button>`).join("");
+}
+
+function totalSets(day){ return day.ex.reduce((sum, ex) => sum + ex.sets, 0); }
+function doneSets(day){
+  return day.ex.reduce((sum, ex) => sum + Math.min(ex.sets, setsOf(ex.key).length), 0);
+}
+
+function renderHeader(){
+  const day = dayOf(store.day);
+  $("#dayKicker").textContent = `День ${day.n} из ${DAYS.length}`;
+  $("#dayTitle").textContent = day.title;
+  $("#daySub").textContent = `${day.ex.length} упражнений · отдых 60–90 сек · без натуживания`;
+  $("#dayTime").textContent = `≈ ${day.minutes} мин`;
+  const done = doneSets(day), total = totalSets(day);
+  $("#dayProgress").textContent = `${done} из ${total} подходов`;
+  $("#dayBar").style.width = total ? Math.round(done/total*100) + "%" : "0%";
+}
+
+function unitOf(ex){
+  if(ex.unit) return ex.unit;
+  return "повторов";
+}
+function repsText(ex){
+  return ex.repsMin === ex.repsMax ? String(ex.repsMin) : `${ex.repsMin}–${ex.repsMax}`;
+}
+function plural(n, one, few, many){
+  const m10 = n % 10, m100 = n % 100;
+  if(m10 === 1 && m100 !== 11) return one;
+  if(m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+  return many;
+}
+
+function exerciseCard(ex, idx){
+  const done = setsOf(ex.key).length;
+  const isDone = done >= ex.sets;
+  const isOn = done > 0 && !isDone;
+  const isLive = state.live && state.live.key === ex.key;
+  const dots = Array.from({length: ex.sets}, (_, i) =>
+    `<i class="dot ${i < done ? "on" : ""}"></i>`).join("");
+  const weight = weightOf(ex);
+  const weightText = weight > 0
+    ? ` · ${weight.toLocaleString("ru-RU")} кг`
+    : "";
+
+  return `
+  <article class="ex ${isLive ? "live" : ""} ${isDone ? "done" : ""} ${isOn ? "on" : ""}" data-key="${ex.key}">
+    <button class="ex-head" data-act="toggle">
+      <div class="num">${done >= ex.sets ? "✓" : idx + 1}</div>
+      <div style="flex:1">
+        <div class="ex-title">${ex.name}</div>
+        <div class="ex-meta">${ex.sets} × ${repsText(ex)} ${unitOf(ex)} · ${ex.muscle}${weightText}</div>
+      </div>
+      <div class="chev">${isDone ? "🟢" : "›"}</div>
+    </button>
+
+    <div class="cue">${ex.cue}</div>
+    <div class="dots">${dots}</div>
+
+    <div class="ex-actions ${isLive ? "hidden" : ""}">
+      <button class="btn ${isDone ? "ghost2" : "primary"}" data-act="start" ${isDone ? "disabled" : ""}>
+        ${isDone ? "Подходы выполнены" : "Начать подход"}
+      </button>
+      <button class="btn ghost2" data-act="toggle" style="flex:0 0 42%">Настройка</button>
+    </div>
+
+    <div class="detail hidden">
+      <b>Как настроить</b>
+      <ul>${ex.setup.map(s => `<li>${s}</li>`).join("")}</ul>
+      <div style="margin-top:8px">
+        <span class="tag">дыхание ${ex.inhale}–${ex.exhale}</span>
+        <span class="tag">подходов: ${ex.sets}</span>
+        <span class="tag">${weight > 0 ? "рабочий вес " + weight + " кг" : "без веса"}</span>
+      </div>
+    </div>
+
+    <div class="live-panel hidden">
+      <div class="phase-wrap">
+        <div class="ring" id="ring-${ex.key}"><div><b id="phase-${ex.key}">Вдох</b><span id="count-${ex.key}">${ex.inhale}</span></div></div>
+        <div class="phase-copy">
+          <b>Метроном дыхания</b>
+          ${ex.inhale} сек вдох · ${ex.exhale} сек выдох. Телефон держи рядом — вибрация подскажет ритм даже без наушников.
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn ghost2" data-act="voice" style="min-height:38px;padding:8px 10px;font-size:12.5px">🔊 Озвучить подсказку</button>
+            <button class="btn ghost2" data-act="mute" style="min-height:38px;padding:8px 10px;font-size:12.5px">${store.tone ? "🔔 Звук вкл" : "🔕 Звук выкл"}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="steppers">
+        ${stepOf(ex) > 0 ? `<div class="stepper">
+          <label>Вес, кг</label>
+          <div class="ctl">
+            <button data-act="wminus">−</button>
+            <input type="number" inputmode="decimal" step="${stepOf(ex)}" value="${weight}" data-act="winput" aria-label="Рабочий вес">
+            <button data-act="wplus">+</button>
+          </div>
+        </div>` : ""}
+        <div class="stepper">
+          <label>Повторы</label>
+          <div class="ctl">
+            <button data-act="rminus">−</button>
+            <input type="number" inputmode="numeric" step="1" value="${ex.repsMax}" data-act="rinput" aria-label="Повторы">
+            <button data-act="rplus">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn primary wide" data-act="finishSet">Завершить подход</button>
+      <button class="btn ghost2 wide" data-act="collapse" style="margin-top:8px;font-size:13px;min-height:40px">Свернуть</button>
+      <div class="rate hidden">
+        <div class="muted" style="margin:4px 0 2px">Как прошёл подход?</div>
+        <button class="easy" data-act="rate" data-rpe="easy">🟢 <span><b>Легко</b><br><small>могла бы ещё 4–5 повторов</small></span></button>
+        <button data-act="rate" data-rpe="optimal">🟡 <span><b>В самый раз</b><br><small>осталось 2–3 повтора в запасе</small></span></button>
+        <button class="hard" data-act="rate" data-rpe="hard">🔴 <span><b>Тяжело / дискомфорт</b><br><small>снизим вес, уберём натуживание</small></span></button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function renderExercises(){
+  const day = dayOf(store.day);
+  $("#exerciseList").innerHTML = day.ex.map((ex, i) => exerciseCard(ex, i)).join("");
+  renderHeader();
+}
+
+/* ------------------------------------------------------------------ метроном */
+
+let metroTimer = null;
+let phaseEndsAt = 0;
+let phaseKind = "in";
+let phases = {in:3, out:2, key:null};
+
+function stopMetro(){
+  clearInterval(metroTimer);
+  metroTimer = null;
+  state.phase = null;
+}
+
+function startMetro(ex){
+  stopMetro();
+  phases = {in: ex.inhale, out: ex.exhale, key: ex.key};
+  phaseKind = "in";
+  phaseEndsAt = performance.now() + ex.inhale * 1000;
+  const ring = document.getElementById("ring-" + ex.key);
+  const label = document.getElementById("phase-" + ex.key);
+  const count = document.getElementById("count-" + ex.key);
+  state.phase = {key: ex.key};
+
+  const paint = () => {
+    const left = (phaseEndsAt - performance.now()) / 1000;
+    if(ring) ring.classList.toggle("out", phaseKind === "out");
+    if(label) label.textContent = phaseKind === "in" ? "Вдох" : "Выдох";
+    if(count) count.textContent = Math.max(1, Math.ceil(left));
+  };
+
+  beep(phaseKind === "in" ? 660 : 440, 0.1, 0.045);
+  buzz(phaseKind === "in" ? 25 : 45);
+  paint();
+
+  metroTimer = setInterval(() => {
+    if(performance.now() >= phaseEndsAt){
+      phaseKind = phaseKind === "in" ? "out" : "in";
+      phaseEndsAt = performance.now() + phases[phaseKind] * 1000;
+      beep(phaseKind === "in" ? 660 : 440, 0.12, phaseKind === "in" ? 0.045 : 0.06);
+      buzz(phaseKind === "in" ? 25 : 55);
+    }
+    paint();
+  }, 100);
+}
+
+/* ------------------------------------------------------------------ отдых */
+
+function startRest(seconds, nextText){
+  clearInterval(state.rest);
+  $("#restBar").classList.remove("hidden");
+  const endsAt = Date.now() + seconds * 1000;
+  const paint = () => {
+    const left = (endsAt - Date.now()) / 1000;
+    $("#restTime").textContent = fmtTime(left);
+    if(left <= 0){
+      clearInterval(state.rest);
+      state.rest = null;
+      $("#restBar").classList.add("hidden");
+      beep(880, 0.18, 0.07);
+      buzz([80, 60, 80]);
+      toast("Отдых закончен — можно начинать подход");
+    }
+  };
+  $("#restNext").innerHTML = `<b>${nextText}</b>подготовь тренажёр, поправь вес`;
+  paint();
+  state.rest = setInterval(paint, 250);
+}
+
+function skipRest(){
+  clearInterval(state.rest);
+  state.rest = null;
+  $("#restBar").classList.add("hidden");
+}
+
+/* ------------------------------------------------------------------ действия */
+
+function openLive(key){
+  const ex = dayOf(store.day).ex.find(e => e.key === key);
+  if(!ex) return;
+  state.live = {key};
+  acquireWakeLock();
+  renderExercises();
+  const card = document.querySelector(`.ex[data-key="${key}"]`);
+  if(card){
+    card.querySelector(".live-panel").classList.remove("hidden");
+    card.classList.add("live");
+    card.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+  startMetro(ex);
+}
+
+function closeLive(){
+  state.live = null;
+  stopMetro();
+  renderExercises();
+}
+
+function adjustWeight(delta, key){
+  const ex = dayOf(store.day).ex.find(e => e.key === key);
+  const step = stepOf(ex) || 1;
+  let w = (store.weights[key] !== undefined ? store.weights[key] : weightOf(ex)) + delta * step;
+  w = Math.max(0, roundHalf(w));
+  store.weights[key] = w;
+  save();
+  const input = document.querySelector(`.ex[data-key="${key}"] input[data-act="winput"]`);
+  if(input) input.value = w;
+  const meta = document.querySelector(`.ex[data-key="${key}"] .ex-meta`);
+  if(meta){
+    meta.textContent = `${ex.sets} × ${repsText(ex)} ${unitOf(ex)} · ${ex.muscle}` +
+      (w > 0 ? ` · ${w.toLocaleString("ru-RU")} кг` : "");
+  }
+}
+
+function logSet(key, weight, reps, rpe){
+  const ex = dayOf(store.day).ex.find(e => e.key === key);
+  const list = setsOf(key);
+  if(list.length >= ex.sets) return;
+  list.push({n: list.length + 1, weight, reps, rpe, at: Date.now()});
+  save();
+
+  const done = list.length;
+  if(done >= ex.sets){
+    toast(`«${ex.name}» — все подходы готовы`);
+  } else {
+    toast(`Подход ${done} из ${ex.sets} записан`);
+  }
+
+  stopMetro();
+  state.live = null;
+  renderExercises();
+
+  if(done < ex.sets){
+    const next = `Подход ${done + 1} из ${ex.sets}: «${ex.name}»`;
+    startRest(restFor(ex), next);
+  } else {
+    const day = dayOf(store.day);
+    const idx = day.ex.findIndex(e => e.key === key);
+    const nextEx = day.ex.slice(idx + 1).find(e => setsOf(e.key).length < e.sets);
+    if(nextEx){
+      startRest(90, `Дальше: «${nextEx.name}»`);
+    } else {
+      setTimeout(() => toast("День закрыт — нажми «Итоги», чтобы увидеть прогресс"), 400);
+    }
+  }
+}
+
+function restFor(ex){
+  return ex.muscle.includes("ноги") || ex.muscle.includes("ягодиц") ? 90 : 75;
+}
+
+/* ------------------------------------------------------------------ прогноз прогрессии */
+
+function progressionFor(ex){
+  const logs = setsOf(ex.key);
+  const w = weightOf(ex);
+  if(!logs.length) return null;
+  const hard = logs.some(s => s.rpe === "hard");
+  const allEasy = logs.every(s => s.rpe === "easy");
+  const maxReps = logs.every(s => s.reps >= ex.repsMax);
+
+  if(w <= 0){
+    return {key: ex.key, name: ex.name, from: 0, to: 0,
+      msg: hard
+        ? "Было тяжело — уменьши амплитуду, дыши ровно и не тяни живот. Вес тут ни при чём."
+        : "Упражнение без веса: добавь 1–2 повтора или держи паузу 2 секунды в верхней точке."};
+  }
+  if(hard){
+    const next = Math.max(DEFAULTS[ex.key]?.step || 0.5, Math.round(w * 0.875 * 2) / 2);
+    return {key: ex.key, name: ex.name, from: w, to: next,
+      msg: "Снизили вес на 10–15%, чтобы убрать натуживание и сохранить дыхание. Это не шаг назад — это безопасность."};
+  }
+  if(allEasy && maxReps){
+    const next = w + (DEFAULTS[ex.key]?.step || 2.5);
+    return {key: ex.key, name: ex.name, from: w, to: next,
+      msg: `Все подходы легко и по ${ex.repsMax} повторов — на следующей тренировке добавляем вес.`};
+  }
+  return {key: ex.key, name: ex.name, from: w, to: w,
+    msg: `Вес оставляем ${w} кг и добавляем 1–2 повтора: цель — ${ex.repsMax} в каждом подходе.`};
+}
+
+function showDashboard(){
+  $("#summary").classList.add("hidden");
+  $("#dashboard").classList.remove("hidden");
+  $("#tabs").classList.remove("hidden");
+  $("#finishBtn").classList.remove("hidden");
+  if(tg && tg.BackButton) tg.BackButton.hide();
+  renderExercises();
+}
+
+function finishWorkout(){
+  const day = dayOf(store.day);
+  const done = doneSets(day);
+  if(!done){ toast("Пока нет ни одного подхода — начни с разминки"); return; }
+
+  const progress = day.ex.map(progressionFor).filter(Boolean);
+  const volume = day.ex.reduce((sum, ex) =>
+    sum + setsOf(ex.key).reduce((s, x) => s + x.weight * x.reps, 0), 0);
+
+  progress.forEach(p => { if(p.to !== p.from) store.weights[p.key] = p.to; });
+  store.history.push({date: new Date().toISOString(), day: day.n, volume, sets: done});
+  delete store.sessions[String(day.n)];
+  save();
+  skipRest();
+  stopMetro();
+  state.live = null;
+  releaseWakeLock();
+
+  $("#dashboard").classList.add("hidden");
+  $("#summary").classList.remove("hidden");
+  $("#tabs").classList.add("hidden");
+  $("#finishBtn").classList.add("hidden");
+  $("#summary").innerHTML = `
+    <div class="card hero summary">
+      <div class="kicker">Тренировка завершена</div>
+      <h2>День ${day.n}: ${day.title}</h2>
+      <p>${done} ${plural(done, "подход", "подхода", "подходов")}${volume > 0 ? " · " + Math.round(volume) + " кг общего объёма" : ""}</p>
+      <div class="big">${volume > 0 ? Math.round(volume) + " <span style=\"font-size:15px;color:var(--muted)\">кг</span>" : done + " <span style=\"font-size:15px;color:var(--muted)\">" + plural(done, "подход", "подхода", "подходов") + "</span>"}</div>
+      <div class="muted">Проверь самочувствие через час и завтра утром.</div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:8px">Веса на следующую тренировку</h3>
+      ${progress.map(p => `
+        <div class="prog-item">
+          <b>${p.name}</b> — ${p.from === p.to
+            ? (p.to > 0 ? `остаётся ${p.to} кг` : "без веса")
+            : `${p.from} → ${p.to} кг`}
+          <div><span>${p.msg}</span></div>
+        </div>`).join("") || `<div class="muted">Подходы не записаны.</div>`}
+    </div>
+    <div class="card safety">
+      <h3>Если появилась тяжесть внизу живота</h3>
+      <ul><li>Не «дотерпи» — остановись, отдохни, при необходимости заверши тренировку.</li>
+      <li>Если ощущение не проходит в покое — покажись врачу, это важнее плана.</li></ul>
+    </div>
+    <button class="btn primary wide" id="backHome">К тренировкам</button>`;
+
+  if(tg && tg.BackButton) tg.BackButton.show();
+  $("#backHome").onclick = showDashboard;
+  window.scrollTo({top:0, behavior:"smooth"});
+  beep(880, 0.15, 0.06);
+  setTimeout(() => beep(1180, 0.2, 0.05), 180);
+  hapticSuccess();
+}
+
+/* ------------------------------------------------------------------ разминка */
+
+function startWarmup(){
+  clearInterval(state.warm);
+  const endsAt = Date.now() + 8 * 60 * 1000;
+  const paint = () => {
+    const left = (endsAt - Date.now()) / 1000;
+    $("#warmClock").textContent = fmtTime(left);
+    if(left <= 0){
+      clearInterval(state.warm);
+      state.warm = null;
+      $("#warmBtn").textContent = "Готово";
+      beep(880, 0.2, 0.06);
+      buzz([100, 60, 100]);
+      toast("Разминка закончена — переходи к первому упражнению");
+    }
+  };
+  $("#warmBtn").textContent = "Стоп";
+  paint();
+  state.warm = setInterval(paint, 300);
+}
+
+/* ------------------------------------------------------------------ события */
+
+$("#tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-day]");
+  if(!btn) return;
+  const n = Number(btn.dataset.day);
+  if(n === store.day) return;
+  skipRest();
+  stopMetro();
+  state.live = null;
+  store.day = n;
+  save();
+  renderTabs();
+  renderExercises();
+  window.scrollTo({top:0, behavior:"smooth"});
+});
+
+$("#exerciseList").addEventListener("click", (e) => {
+  const card = e.target.closest(".ex");
+  if(!card) return;
+  const key = card.dataset.key;
+  const ex = dayOf(store.day).ex.find(x => x.key === key);
+  const actEl = e.target.closest("[data-act]");
+  if(!actEl) return;
+  const act = actEl.dataset.act;
+
+  if(act === "toggle"){
+    const d = card.querySelector(".detail");
+    d.classList.toggle("hidden");
+    return;
+  }
+  if(act === "collapse"){
+    closeLive();
+    return;
+  }
+  if(act === "start"){
+    if(state.live && state.live.key !== key){
+      toast("Сначала заверши текущий подход");
+      return;
+    }
+    openLive(key);
+    return;
+  }
+  if(act === "wplus"){ adjustWeight(1, key); return; }
+  if(act === "wminus"){ adjustWeight(-1, key); return; }
+  if(act === "rplus" || act === "rminus"){
+    const input = card.querySelector('input[data-act="rinput"]');
+    let v = Number(input.value) || ex.repsMax;
+    v = Math.min(ex.repsMax + 10, Math.max(1, v + (act === "rplus" ? 1 : -1)));
+    input.value = v;
+    return;
+  }
+  if(act === "mute"){
+    store.tone = !store.tone;
+    save();
+    actEl.textContent = store.tone ? "🔔 Звук вкл" : "🔕 Звук выкл";
+    return;
+  }
+  if(act === "voice"){
+    try{
+      const u = new SpeechSynthesisUtterance(ex.cue.replace("•", "."));
+      u.lang = "ru-RU";
+      u.rate = 0.95;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }catch(err){ toast("Озвучка недоступна в этом браузере"); }
+    return;
+  }
+  if(act === "finishSet"){
+    card.querySelector(".rate").classList.remove("hidden");
+    actEl.classList.add("hidden");
+    stopMetro();
+    beep(520, 0.1, 0.05);
+    return;
+  }
+  if(act === "rate"){
+    const input = card.querySelector('input[data-act="winput"]');
+    const repsInput = card.querySelector('input[data-act="rinput"]');
+    const weight = Math.max(0, Number(input.value) || weightOf(ex));
+    const reps = Math.max(1, Number(repsInput.value) || ex.repsMax);
+    store.weights[key] = weight;
+    save();
+    logSet(key, weight, reps, actEl.dataset.rpe);
+    return;
+  }
+});
+
+$("#exerciseList").addEventListener("change", (e) => {
+  const input = e.target.closest("input");
+  if(!input) return;
+  const card = e.target.closest(".ex");
+  const key = card.dataset.key;
+  if(input.dataset.act === "winput"){
+    const v = Math.max(0, roundHalf(Number(input.value) || 0));
+    input.value = v;
+    store.weights[key] = v;
+    save();
+  }
+});
+
+$("#warmBtn").addEventListener("click", () => {
+  if(state.warm){
+    clearInterval(state.warm);
+    state.warm = null;
+    $("#warmBtn").textContent = "Старт";
+    $("#warmClock").textContent = "8:00";
+  } else {
+    startWarmup();
+  }
+});
+
+$("#skipRest").addEventListener("click", skipRest);
+$("#finishBtn").addEventListener("click", finishWorkout);
+
+/* ------------------------------------------------------------------ старт */
+
+renderTabs();
+renderExercises();
+if(!storageOk) showStorageNotice();
+</script>
+</body>
+</html>
